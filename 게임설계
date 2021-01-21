@@ -1,1 +1,59 @@
+# 결합게임 설계
 
+1. 게임의 상태
+  0) 한 라운드 생성
+    - Map<String,List<String>> gamePanel = gameMaker();
+  1) 게임판넬: gamePanel['data']
+    - 9개의 그리드뷰, 매라운드마다 랜덤생성
+    - 각 셀의 상태: false(선택해제), true(선택됨)
+      - List<bool> isCheck = [false,...,false];
+    - 선택된 셀의 개수: 
+      - int checkCnt: 플레이어가 셀 선택시 checkCnt++
+      - funcCellChecked(): 3개 초과는 선택불가
+  2) 게임정답: gamePanel['ansList']
+    - 000N, 001N, 002N, ... -> 4번비트에 플레이어의 합제출여부
+    - 000Y, ... -> 플레이어가 해당답을 맞추면 Y로 변경
+  3) 버튼area:
+    3.1) 합: setHapState(), bool hapState, FlatButton(기본=회색)
+      - bool hapState = false
+      - 선택된 셀의 개수가 3일때만 활성화 됨 
+        - if(checkCnt == 3) hapState = true;
+        - FlatButton Colors: Green 으로 변경
+      - 합FlatButton.onState() -> funcIsHap(): 선택한 답의 합 판별
+        - funcIsHap(): 
+          - String tray = null : 선택된 cell 저장
+          - for: isCheck[0]부터 true이면 tray에 append
+          - for: tray == ansList[0]~ansList[length-1] (3비트만 검사!)
+            - 경우에 따라 resFlag 다르게 return 정답:0, 기정답:1, 오답:-1 ... -> setUserState(resFlag)
+          - 플레이어가 합을 맞추면(resFlag=1이면)
+            - hapCnt--;
+            - 현재 선택된 셀 리프레시: isCheck 모두 false로 변경
+            - setGyulState() 호출
+              - 결: setGyulState(), bool gyulState, int gyulTime, FlatButton
+              - gyulState = false -> true로 변경 -> 결FlatButton(기본=회색) -> Red?로 변경
+              - gyulTime = 7 ... 타이머라이브러리? 사용해서 7초를 흐르게 해야함.
+              - gyulTime = 0 되면 gyulState = true -> false -> 결FlatButton 다시 grey로 변경
+              - 결FlatButton.onState() -> funcIsGyul(): 결 판별 (결정답:2, 결오답:-2)
+              - funcIsGyul(): hapCnt==0 -> resFlag return 2, 아니면(헛다리) return -2 -> setUserState(resFlag)
+          - (플레이어가 합을 맞출때마다) 현 hapCnt를 검사: if hapCnt == 0이면 -> 라운드 리프레시: newRound();
+            - *주의: 플레이어가 결을 맞췄든, 안맞췄든 hapCnt는 매번 검사하고, 0이되면 라운드가 리프레시 된다.
+    3.2) 힌트: setHintState(), bool hintState, FlatButton
+      - 한 라운드당 한번 사용 가능, 해당 라운드의 합 갯수 표출
+      - 힌트FlatButton.onState() -> setHintState() (버튼초기상태:Orange)
+        - hintState = true -> 사용 후 -> hintState = false -> 버튼 비활성화:grey    
+  4) 남은 합의개수: int hapCnt (현 라운드 정답의 개수는 ansList.length: 힌트표출용)
+    - newRound(): 플레이어가 모든 합을 맞추면 게임판넬 리프레시
+  5) 시간area: GyulTime 쇼잉
+  6) 정답area: 현재라운드의 정답 쇼잉
+    - 플레이어가 합을 맞추면 해당 정답 append
+
+2. 플레이어의 상태: setUserState(), int roundCnt, int score
+  1) 라운드수 
+    - newRound() 될 때마다 roundCnt++
+  2) 점수
+    - 합을 맞추면 score+=30
+    - 합을 틀리면 score-=10
+    - 이미 나온 합을 재입력하면 score-=10
+    - 결을 맞추면 score+=50
+    - 결을 틀리면 score-=30
+    - 힌트를 사용하면 score-=20
