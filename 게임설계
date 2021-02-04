@@ -27,6 +27,7 @@
             - 경우에 따라 resFlag 다르게 return 정답:0, 기정답:1, 오답:-1 ... -> setUserState(resFlag)
           - 플레이어가 합을 맞추면(resFlag=1이면)
             - hapCnt--;
+            - 현재 맞춘 합을 정답area에 append => 합 내역 쇼잉
             - 현재 선택된 셀 리프레시: isCheck 모두 false로 변경
             - setGyulState() 호출
               - 결: setGyulState(), bool gyulState, int gyulTime, FlatButton
